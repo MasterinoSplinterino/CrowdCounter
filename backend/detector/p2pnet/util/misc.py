@@ -22,9 +22,10 @@ from torch.autograd import Variable
 
 # needed due to empty tensor bug in pytorch and torchvision 0.5
 import torchvision
-if float(torchvision.__version__[:3]) < 0.7:
-    from torchvision.ops import _new_empty_tensor
-    from torchvision.ops.misc import _output_size
+
+# Compatibility for older torchvision versions (no longer needed, kept for reference)
+_new_empty_tensor = None
+_output_size = None
 
 
 class SmoothedValue(object):
@@ -444,20 +445,9 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     # type: (Tensor, Optional[List[int]], Optional[float], str, Optional[bool]) -> Tensor
     """
     Equivalent to nn.functional.interpolate, but with support for empty batch sizes.
-    This will eventually be supported natively by PyTorch, and this
-    class can go away.
     """
-    if float(torchvision.__version__[:3]) < 0.7:
-        if input.numel() > 0:
-            return torch.nn.functional.interpolate(
-                input, size, scale_factor, mode, align_corners
-            )
-
-        output_shape = _output_size(2, input, size, scale_factor)
-        output_shape = list(input.shape[:-2]) + list(output_shape)
-        return _new_empty_tensor(input, output_shape)
-    else:
-        return torchvision.ops.misc.interpolate(input, size, scale_factor, mode, align_corners)
+    # Modern PyTorch/torchvision handles this natively
+    return torch.nn.functional.interpolate(input, size, scale_factor, mode, align_corners)
 
 
 class FocalLoss(nn.Module):
