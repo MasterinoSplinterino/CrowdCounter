@@ -89,6 +89,7 @@ class DetectionEngine:
 
         # YOLO detection
         start_time = time.time()
+        logger.info(f"[YOLO] Starting detection on frame {frame.shape[1]}x{frame.shape[0]}")
 
         # Head detection models detect only heads, no class filter needed
         # COCO-based models need class=0 (person) filter
@@ -100,6 +101,7 @@ class DetectionEngine:
         if not self._is_head_model():
             predict_kwargs["classes"] = [0]  # class 0 = person in COCO
 
+        logger.info(f"[YOLO] Running inference with conf={confidence}, imgsz={imgsz}")
         results = self.model.predict(frame, **predict_kwargs)
 
         inference_time = (time.time() - start_time) * 1000
@@ -109,6 +111,7 @@ class DetectionEngine:
 
         result = results[0]
         count = len(result.boxes)
+        logger.info(f"[YOLO] Detection complete: {count} objects in {inference_time:.1f}ms")
 
         # Draw circles at center of each detection instead of boxes
         annotated_frame = frame.copy()

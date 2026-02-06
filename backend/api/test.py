@@ -3,9 +3,13 @@ import cv2
 import numpy as np
 import tempfile
 import os
+import time
+import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["test"])
 
@@ -38,34 +42,59 @@ async def test_image(file: UploadFile = File(...)):
     Returns count, bounding boxes, and annotated image.
     File is not saved - processed in memory only.
     """
+    request_start = time.time()
+    logger.info(f"[TEST] Received image upload: {file.filename}, type: {file.content_type}")
+
     if _detection_manager is None or not _detection_manager.model_loaded:
+        logger.error("[TEST] Detection engine not ready")
         raise HTTPException(status_code=503, detail="Detection engine not ready")
 
     # Validate file type
     if not file.content_type or not file.content_type.startswith("image/"):
+        logger.error(f"[TEST] Invalid file type: {file.content_type}")
         raise HTTPException(status_code=400, detail="File must be an image")
 
     # Read file into memory
+    logger.info("[TEST] Reading file into memory...")
     contents = await file.read()
+    logger.info(f"[TEST] File read complete, size: {len(contents)} bytes")
 
     # Decode image
+    logger.info("[TEST] Decoding image...")
     nparr = np.frombuffer(contents, np.uint8)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     if frame is None:
+        logger.error("[TEST] Failed to decode image")
         raise HTTPException(status_code=400, detail="Could not decode image")
+
+    logger.info(f"[TEST] Image decoded: {frame.shape[1]}x{frame.shape[0]} pixels")
 
     # Run detection
     settings = _detection_manager.settings
-    count, annotated, detections = _detection_manager.engine.detect(
-        frame,
-        confidence=settings["confidence_threshold"],
-        imgsz=settings["imgsz"]
-    )
+    model_name = settings.get("model", "unknown")
+    logger.info(f"[TEST] Starting detection with model: {model_name}, confidence: {settings['confidence_threshold']}")
+
+    try:
+        detect_start = time.time()
+        count, annotated, detections = _detection_manager.engine.detect(
+            frame,
+            confidence=settings["confidence_threshold"],
+            imgsz=settings["imgsz"]
+        )
+        detect_time = (time.time() - detect_start) * 1000
+        logger.info(f"[TEST] Detection complete: {count} objects found in {detect_time:.1f}ms")
+    except Exception as e:
+        logger.error(f"[TEST] Detection failed with error: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"Detection error: {str(e)}")
 
     # Encode annotated frame to base64
+    logger.info("[TEST] Encoding result image...")
     _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 85])
     image_base64 = f"data:image/jpeg;base64,{base64.b64encode(buffer).decode()}"
+
+    total_time = (time.time() - request_start) * 1000
+    logger.info(f"[TEST] Request complete: {count} detections, total time: {total_time:.1f}ms")
 
     return TestResult(
         count=count,

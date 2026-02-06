@@ -74,11 +74,14 @@ class P2PNetEngine:
             detections: list of detection dicts with center coords
         """
         if not self.loaded or self.model is None:
+            logger.error("[P2PNet] Model not loaded!")
             raise RuntimeError("P2PNet model not loaded")
 
         start_time = time.time()
+        logger.info(f"[P2PNet] Starting detection on frame {frame.shape[1]}x{frame.shape[0]}")
 
         # Convert BGR to RGB
+        logger.debug("[P2PNet] Converting BGR to RGB...")
         img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
 
@@ -92,6 +95,7 @@ class P2PNetEngine:
         if new_height == 0:
             new_height = 128
 
+        logger.info(f"[P2PNet] Resizing image from {width}x{height} to {new_width}x{new_height}")
         img_resized = img_pil.resize((new_width, new_height), Image.LANCZOS)
 
         # Scale factors for mapping back to original size
@@ -99,14 +103,20 @@ class P2PNetEngine:
         scale_y = height / new_height
 
         # Preprocess
+        logger.debug("[P2PNet] Preprocessing image tensor...")
         img_tensor = self.transform(img_resized)
         samples = img_tensor.unsqueeze(0).to(self.device)
 
         # Inference
+        logger.info(f"[P2PNet] Running inference on {self.device}...")
+        inference_start = time.time()
         with torch.no_grad():
             outputs = self.model(samples)
+        inference_only = (time.time() - inference_start) * 1000
+        logger.info(f"[P2PNet] Model inference complete in {inference_only:.1f}ms")
 
         # Get predictions
+        logger.debug("[P2PNet] Processing model outputs...")
         outputs_scores = torch.nn.functional.softmax(outputs['pred_logits'], -1)[:, :, 1][0]
         outputs_points = outputs['pred_points'][0]
 
@@ -121,6 +131,7 @@ class P2PNetEngine:
             self._inference_times.pop(0)
 
         count = len(points)
+        logger.info(f"[P2PNet] Found {count} points with confidence > {confidence}")
 
         # Draw circles on original frame
         annotated_frame = frame.copy()
