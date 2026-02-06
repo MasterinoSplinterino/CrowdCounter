@@ -21,6 +21,7 @@ def set_detection_manager(manager):
 class Detection(BaseModel):
     bbox: List[float]
     confidence: float
+    center: Optional[List[int]] = None
 
 
 class TestResult(BaseModel):

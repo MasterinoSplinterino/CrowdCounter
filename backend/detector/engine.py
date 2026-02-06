@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+import cv2
 import numpy as np
 from typing import Tuple, List
 import time
@@ -76,15 +77,28 @@ class DetectionEngine:
 
         result = results[0]
         count = len(result.boxes)
-        annotated_frame = result.plot()
 
+        # Draw circles at center of each detection instead of boxes
+        annotated_frame = frame.copy()
         detections = []
+
         for box in result.boxes:
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
             conf = float(box.conf[0].cpu().numpy())
+
+            # Calculate center point
+            cx = int((x1 + x2) / 2)
+            cy = int((y1 + y2) / 2)
+
+            # Draw filled circle with outline
+            radius = 8
+            cv2.circle(annotated_frame, (cx, cy), radius, (0, 255, 0), -1)  # Green fill
+            cv2.circle(annotated_frame, (cx, cy), radius, (0, 0, 0), 2)  # Black outline
+
             detections.append({
                 "bbox": [float(x1), float(y1), float(x2), float(y2)],
-                "confidence": conf
+                "confidence": conf,
+                "center": [cx, cy]
             })
 
         return count, annotated_frame, detections
