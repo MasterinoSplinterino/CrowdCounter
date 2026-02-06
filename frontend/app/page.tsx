@@ -20,16 +20,16 @@ export default function Dashboard() {
   }, [rooms])
 
   useEffect(() => {
-    if (lastMessage?.type === 'count_update') {
+    if (lastMessage?.type === 'count_update' && lastMessage.room_id) {
       setLiveRooms(prev => prev.map(room =>
         room.id === lastMessage.room_id
           ? {
               ...room,
-              count: lastMessage.count,
-              raw_count: lastMessage.raw_count,
-              occupancy_percent: lastMessage.occupancy_percent,
-              status: lastMessage.status,
-              last_updated: lastMessage.timestamp,
+              count: lastMessage.count ?? room.count,
+              raw_count: lastMessage.raw_count ?? room.raw_count,
+              occupancy_percent: lastMessage.occupancy_percent ?? room.occupancy_percent,
+              status: (lastMessage.status as Room['status']) ?? room.status,
+              last_updated: lastMessage.timestamp ?? room.last_updated,
             }
           : room
       ))
