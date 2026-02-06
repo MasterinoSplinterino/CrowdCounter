@@ -39,8 +39,9 @@ data/
 .DS_Store
 Thumbs.db
 
-# YOLO models
+# YOLO models (exclude pre-trained models in backend/models/)
 *.pt
+!backend/models/*.pt
 *.onnx
 
 # Logs
