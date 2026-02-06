@@ -6,6 +6,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Models that are trained specifically for head detection (no class filter needed)
+HEAD_DETECTION_MODELS = [
+    "yolov8-head-medium.pt",
+    "yolov8-head-nano.pt",
+    "yolov8-crowdhuman.pt",
+    "models/yolov8-head-medium.pt",
+    "models/yolov8-head-nano.pt",
+    "models/yolov8-crowdhuman.pt",
+]
+
 
 class DetectionEngine:
     def __init__(self, model_path: str = "yolo26m.pt", device: str = "cpu"):
@@ -16,12 +26,17 @@ class DetectionEngine:
         self._inference_times: List[float] = []
         self._max_times = 100
 
+    def _is_head_model(self) -> bool:
+        """Check if current model is a head detection model."""
+        return any(name in self.model_path for name in HEAD_DETECTION_MODELS)
+
     async def load_model(self) -> None:
         logger.info(f"Loading model {self.model_path} on {self.device}")
         self.model = YOLO(self.model_path)
         self.model.to(self.device)
         self.loaded = True
-        logger.info("Model loaded successfully")
+        model_type = "head detection" if self._is_head_model() else "person detection"
+        logger.info(f"Model loaded successfully ({model_type})")
 
     def detect(
         self,
@@ -42,13 +57,17 @@ class DetectionEngine:
 
         start_time = time.time()
 
-        results = self.model.predict(
-            frame,
-            classes=[0],  # class 0 = person in COCO
-            conf=confidence,
-            imgsz=imgsz,
-            verbose=False
-        )
+        # Head detection models detect only heads, no class filter needed
+        # COCO-based models need class=0 (person) filter
+        predict_kwargs = {
+            "conf": confidence,
+            "imgsz": imgsz,
+            "verbose": False,
+        }
+        if not self._is_head_model():
+            predict_kwargs["classes"] = [0]  # class 0 = person in COCO
+
+        results = self.model.predict(frame, **predict_kwargs)
 
         inference_time = (time.time() - start_time) * 1000
         self._inference_times.append(inference_time)

@@ -3,19 +3,21 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Save } from 'lucide-react'
-import { api, ApiSettings, ApiStatus } from '@/lib/api'
+import { api, ApiSettings, ApiStatus, ApiModel } from '@/lib/api'
 
 export default function DetectionSettingsPage() {
   const [settings, setSettings] = useState<ApiSettings | null>(null)
   const [status, setStatus] = useState<ApiStatus | null>(null)
+  const [models, setModels] = useState<ApiModel[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    Promise.all([api.getSettings(), api.getStatus()])
-      .then(([settingsData, statusData]) => {
+    Promise.all([api.getSettings(), api.getStatus(), api.getModels()])
+      .then(([settingsData, statusData, modelsData]) => {
         setSettings(settingsData)
         setStatus(statusData)
+        setModels(modelsData)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -68,22 +70,45 @@ export default function DetectionSettingsPage() {
         {/* Model Settings */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-            Модель YOLO
+            Модель детекции
           </h2>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Модель
-              </label>
-              <select
-                value={settings.model}
-                onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+            {models.map((model) => (
+              <label
+                key={model.id}
+                className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                  settings.model === model.id
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}
               >
-                <option value="yolo11n.pt">yolo11n.pt (nano, быстрая)</option>
-                <option value="yolo11s.pt">yolo11s.pt (small, точнее)</option>
-              </select>
-            </div>
+                <input
+                  type="radio"
+                  name="model"
+                  value={model.id}
+                  checked={settings.model === model.id}
+                  onChange={(e) => setSettings({ ...settings, model: e.target.value })}
+                  className="mt-1 mr-3"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {model.name}
+                    </span>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                      model.type === 'head'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    }`}>
+                      {model.type === 'head' ? 'Головы' : 'Люди'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {model.description}
+                  </p>
+                </div>
+              </label>
+            ))}
           </div>
         </div>
 

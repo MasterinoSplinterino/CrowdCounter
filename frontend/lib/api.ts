@@ -34,6 +34,13 @@ export interface ApiStatus {
   avg_inference_ms: number
 }
 
+export interface ApiModel {
+  id: string
+  name: string
+  description: string
+  type: 'person' | 'head'
+}
+
 export interface ApiCount {
   id: number
   room_id: string
@@ -105,6 +112,9 @@ export const api = {
   getSettings: () => request<ApiSettings>('/api/settings'),
   updateSettings: (data: Partial<ApiSettings>) =>
     request<ApiSettings>('/api/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Models
+  getModels: () => request<ApiModel[]>('/api/models'),
 
   // Status
   getStatus: () => request<ApiStatus>('/api/status'),

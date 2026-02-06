@@ -1,10 +1,39 @@
 from fastapi import APIRouter, Depends
+from typing import List
 import aiosqlite
 
 from db.database import get_db
 from db.models import Settings, SettingsUpdate, SystemStatus
 
 router = APIRouter(prefix="/api", tags=["settings"])
+
+# Available models with descriptions
+AVAILABLE_MODELS = [
+    {
+        "id": "yolo26m.pt",
+        "name": "YOLO26m (Person Detection)",
+        "description": "General person detection, good for normal scenes",
+        "type": "person",
+    },
+    {
+        "id": "models/yolov8-crowdhuman.pt",
+        "name": "YOLOv8 CrowdHuman (Head Detection)",
+        "description": "Best for dense crowds, trained on CrowdHuman dataset",
+        "type": "head",
+    },
+    {
+        "id": "models/yolov8-head-medium.pt",
+        "name": "YOLOv8 SCUT-HEAD Medium",
+        "description": "Head detection, balanced accuracy/speed",
+        "type": "head",
+    },
+    {
+        "id": "models/yolov8-head-nano.pt",
+        "name": "YOLOv8 SCUT-HEAD Nano",
+        "description": "Fast head detection, lower accuracy",
+        "type": "head",
+    },
+]
 
 # Reference to detection manager (set from main.py)
 _detection_manager = None
@@ -13,6 +42,12 @@ _detection_manager = None
 def set_detection_manager(manager):
     global _detection_manager
     _detection_manager = manager
+
+
+@router.get("/models")
+async def get_available_models() -> List[dict]:
+    """Get list of available detection models."""
+    return AVAILABLE_MODELS
 
 
 @router.get("/settings", response_model=Settings)
@@ -24,11 +59,11 @@ async def get_settings(db: aiosqlite.Connection = Depends(get_db)):
     settings_dict = {row["key"]: row["value"] for row in rows}
 
     return Settings(
-        model=settings_dict.get("model", "yolo11n.pt"),
-        confidence_threshold=float(settings_dict.get("confidence_threshold", 0.35)),
+        model=settings_dict.get("model", "yolo26m.pt"),
+        confidence_threshold=float(settings_dict.get("confidence_threshold", 0.20)),
         detection_interval=int(settings_dict.get("detection_interval", 15)),
         smoothing_alpha=float(settings_dict.get("smoothing_alpha", 0.3)),
-        imgsz=int(settings_dict.get("imgsz", 640)),
+        imgsz=int(settings_dict.get("imgsz", 1280)),
     )
 
 

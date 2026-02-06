@@ -17,11 +17,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download YOLO26m model during build (medium size, better accuracy for crowds)
-RUN python -c "from ultralytics import YOLO; YOLO('yolo26m.pt')"
-
-# Copy application code
+# Copy application code (includes pre-downloaded head detection models in /models)
 COPY . .
+
+# Download YOLO26m model during build (for general person detection)
+RUN python -c "from ultralytics import YOLO; YOLO('yolo26m.pt')"
 
 # Create data directory
 RUN mkdir -p /app/data
