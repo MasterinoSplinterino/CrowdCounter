@@ -18,7 +18,6 @@ services:
       - FRONTEND_URL=http://frontend:3000
     volumes:
       - crowdcount-data:/app/data
-    # NO external ports - only internal network access
     expose:
       - "8000"
     healthcheck:
@@ -34,16 +33,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        # Internal Docker network URL (backend accessible as "backend" hostname)
-        - NEXT_PUBLIC_API_URL=
-        - NEXT_PUBLIC_WS_URL=
     container_name: crowdcount-frontend
     restart: unless-stopped
     environment:
-      # Server-side API URL (inside Docker network)
       - BACKEND_URL=http://backend:8000
-      - BACKEND_WS_URL=ws://backend:8000
     expose:
       - "3000"
     depends_on:
@@ -51,16 +44,13 @@ services:
         condition: service_healthy
     networks:
       - crowdcount-internal
-    labels:
-      # Dokploy/Traefik labels for Cloudflare Tunnel routing
-      - "traefik.enable=true"
-      - "traefik.http.routers.crowdcount.rule=Host(`crown.nemytnaya.ru`)"
-      - "traefik.http.routers.crowdcount.entrypoints=web"
-      - "traefik.http.services.crowdcount.loadbalancer.server.port=3000"
+      - dokploy-network
 
 networks:
   crowdcount-internal:
     driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   crowdcount-data:
