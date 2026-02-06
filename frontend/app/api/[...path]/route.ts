@@ -33,16 +33,29 @@ export async function POST(
   { params }: { params: { path: string[] } }
 ) {
   const path = params.path.join('/')
+  const contentType = request.headers.get('content-type') || ''
 
   try {
-    const body = await request.json()
-    const response = await fetch(`${BACKEND_URL}/api/${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
+    let response: Response
+
+    // Handle multipart/form-data (file uploads)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      response = await fetch(`${BACKEND_URL}/api/${path}`, {
+        method: 'POST',
+        body: formData,
+      })
+    } else {
+      // Handle JSON
+      const body = await request.json()
+      response = await fetch(`${BACKEND_URL}/api/${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+    }
 
     const data = await response.json()
     return NextResponse.json(data, { status: response.status })

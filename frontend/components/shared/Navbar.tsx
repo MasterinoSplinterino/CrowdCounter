@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Settings } from 'lucide-react'
+import { LayoutDashboard, Settings, FlaskConical } from 'lucide-react'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -33,6 +33,18 @@ export default function Navbar() {
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              href="/test"
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/test')
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <FlaskConical className="w-4 h-4" />
+              <span>Test</span>
             </Link>
 
             <Link

@@ -3,6 +3,7 @@ from .counts import router as counts_router
 from .settings import router as settings_router
 from .preview import router as preview_router
 from .ws import router as ws_router
+from .test import router as test_router
 
 __all__ = [
     "rooms_router",
@@ -10,4 +11,5 @@ __all__ = [
     "settings_router",
     "preview_router",
     "ws_router",
+    "test_router",
 ]

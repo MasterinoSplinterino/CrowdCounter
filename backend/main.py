@@ -14,9 +14,11 @@ from api import (
     settings_router,
     preview_router,
     ws_router,
+    test_router,
 )
 from api.settings import set_detection_manager as set_settings_manager
 from api.preview import set_detection_manager as set_preview_manager
+from api.test import set_detection_manager as set_test_manager
 from api.ws import broadcast_count_update
 from api.counts import save_count
 
@@ -101,6 +103,7 @@ async def lifespan(app: FastAPI):
     # Set manager references for API routes
     set_settings_manager(detection_manager)
     set_preview_manager(detection_manager)
+    set_test_manager(detection_manager)
 
     # Load settings from DB
     await load_settings_from_db()
@@ -141,6 +144,7 @@ app.include_router(counts_router)
 app.include_router(settings_router)
 app.include_router(preview_router)
 app.include_router(ws_router)
+app.include_router(test_router)
 
 
 @app.get("/health")
