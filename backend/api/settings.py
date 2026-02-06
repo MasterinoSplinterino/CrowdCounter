@@ -10,6 +10,12 @@ router = APIRouter(prefix="/api", tags=["settings"])
 # Available models with descriptions
 AVAILABLE_MODELS = [
     {
+        "id": "models/p2pnet.pth",
+        "name": "P2PNet (Point-based Counting)",
+        "description": "Best for crowd counting, predicts point locations directly",
+        "type": "point",
+    },
+    {
         "id": "yolo26m.pt",
         "name": "YOLO26m (Person Detection)",
         "description": "General person detection, good for normal scenes",
@@ -18,7 +24,7 @@ AVAILABLE_MODELS = [
     {
         "id": "models/yolov8-crowdhuman.pt",
         "name": "YOLOv8 CrowdHuman (Head Detection)",
-        "description": "Best for dense crowds, trained on CrowdHuman dataset",
+        "description": "Head detection for dense crowds",
         "type": "head",
     },
     {

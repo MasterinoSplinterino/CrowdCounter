@@ -38,7 +38,7 @@ export interface ApiModel {
   id: string
   name: string
   description: string
-  type: 'person' | 'head'
+  type: 'person' | 'head' | 'point'
 }
 
 export interface ApiCount {

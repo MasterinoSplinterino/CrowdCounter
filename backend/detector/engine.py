@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 import cv2
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Union
 import time
 import logging
 
@@ -17,27 +17,50 @@ HEAD_DETECTION_MODELS = [
     "models/yolov8-crowdhuman.pt",
 ]
 
+# P2PNet model identifiers
+P2PNET_MODELS = [
+    "p2pnet.pth",
+    "models/p2pnet.pth",
+]
+
 
 class DetectionEngine:
     def __init__(self, model_path: str = "yolo26m.pt", device: str = "cpu"):
         self.model_path = model_path
         self.device = device
-        self.model: YOLO = None
+        self.model = None  # Can be YOLO or P2PNetEngine
         self.loaded = False
         self._inference_times: List[float] = []
         self._max_times = 100
+        self._is_p2pnet = False
 
     def _is_head_model(self) -> bool:
         """Check if current model is a head detection model."""
         return any(name in self.model_path for name in HEAD_DETECTION_MODELS)
 
+    def _check_is_p2pnet(self) -> bool:
+        """Check if current model is P2PNet."""
+        return any(name in self.model_path for name in P2PNET_MODELS)
+
     async def load_model(self) -> None:
         logger.info(f"Loading model {self.model_path} on {self.device}")
-        self.model = YOLO(self.model_path)
-        self.model.to(self.device)
-        self.loaded = True
-        model_type = "head detection" if self._is_head_model() else "person detection"
-        logger.info(f"Model loaded successfully ({model_type})")
+
+        self._is_p2pnet = self._check_is_p2pnet()
+
+        if self._is_p2pnet:
+            # Load P2PNet model
+            from .p2pnet import P2PNetEngine
+            self.model = P2PNetEngine(self.model_path, self.device)
+            await self.model.load_model()
+            self.loaded = True
+            logger.info("Model loaded successfully (P2PNet point-based counting)")
+        else:
+            # Load YOLO model
+            self.model = YOLO(self.model_path)
+            self.model.to(self.device)
+            self.loaded = True
+            model_type = "head detection" if self._is_head_model() else "person detection"
+            logger.info(f"Model loaded successfully ({model_type})")
 
     def detect(
         self,
@@ -50,12 +73,21 @@ class DetectionEngine:
 
         Returns:
             count: number of detected people
-            annotated_frame: frame with bounding boxes
-            detections: list of detection dicts with bbox coords
+            annotated_frame: frame with point markers
+            detections: list of detection dicts with coords
         """
         if not self.loaded or self.model is None:
             raise RuntimeError("Model not loaded")
 
+        # P2PNet has its own detect method
+        if self._is_p2pnet:
+            count, annotated_frame, detections = self.model.detect(frame, confidence, imgsz)
+            # Update inference times from P2PNet
+            if self.model._inference_times:
+                self._inference_times = self.model._inference_times.copy()
+            return count, annotated_frame, detections
+
+        # YOLO detection
         start_time = time.time()
 
         # Head detection models detect only heads, no class filter needed
@@ -111,7 +143,17 @@ class DetectionEngine:
 
     def reload_model(self, model_path: str) -> None:
         self.model_path = model_path
-        self.model = YOLO(model_path)
-        self.model.to(self.device)
+        self._is_p2pnet = self._check_is_p2pnet()
+
+        if self._is_p2pnet:
+            from .p2pnet import P2PNetEngine
+            self.model = P2PNetEngine(model_path, self.device)
+            # Sync load for reload
+            import asyncio
+            asyncio.get_event_loop().run_until_complete(self.model.load_model())
+        else:
+            self.model = YOLO(model_path)
+            self.model.to(self.device)
+
         self._inference_times.clear()
         logger.info(f"Model reloaded: {model_path}")

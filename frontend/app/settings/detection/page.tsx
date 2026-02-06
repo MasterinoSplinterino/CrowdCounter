@@ -96,11 +96,13 @@ export default function DetectionSettingsPage() {
                       {model.name}
                     </span>
                     <span className={`px-2 py-0.5 text-xs rounded-full ${
-                      model.type === 'head'
+                      model.type === 'point'
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                        : model.type === 'head'
                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                         : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                     }`}>
-                      {model.type === 'head' ? 'Головы' : 'Люди'}
+                      {model.type === 'point' ? 'Точки' : model.type === 'head' ? 'Головы' : 'Люди'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
