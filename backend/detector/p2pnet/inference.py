@@ -10,6 +10,11 @@ import logging
 import sys
 import os
 
+# Optimize PyTorch for CPU inference
+num_threads = os.cpu_count() or 4
+torch.set_num_threads(num_threads)
+torch.set_num_interop_threads(num_threads)
+
 # Add p2pnet modules to path
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -46,6 +51,7 @@ class P2PNetEngine:
     def load_model(self) -> None:
         """Load P2PNet model (synchronous)."""
         logger.info(f"Loading P2PNet model from {self.weight_path} on {self.device}")
+        logger.info(f"[P2PNet] Using {num_threads} CPU threads for inference")
 
         args = Args()
         self.model = build_model(args, training=False)
@@ -56,6 +62,19 @@ class P2PNetEngine:
 
         self.model.to(self.device)
         self.model.eval()
+
+        # Try to optimize with torch.compile (PyTorch 2.0+) or torch.jit
+        try:
+            if hasattr(torch, 'compile'):
+                # PyTorch 2.0+ - use torch.compile for best performance
+                self.model = torch.compile(self.model, mode="reduce-overhead")
+                logger.info("[P2PNet] Model optimized with torch.compile")
+            else:
+                # Fallback to JIT tracing for older PyTorch
+                logger.info("[P2PNet] torch.compile not available, using standard mode")
+        except Exception as e:
+            logger.warning(f"[P2PNet] Could not optimize model: {e}")
+
         self.loaded = True
         logger.info("P2PNet model loaded successfully (point-based crowd counting)")
 
@@ -85,8 +104,20 @@ class P2PNetEngine:
         img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
 
+        # Store original dimensions for scaling back
+        orig_width, orig_height = img_pil.size
+
+        # Limit max size for CPU performance (P2PNet is memory-intensive)
+        width, height = orig_width, orig_height
+        max_size = imgsz  # Use imgsz parameter as max dimension
+        if width > max_size or height > max_size:
+            scale = max_size / max(width, height)
+            width = int(width * scale)
+            height = int(height * scale)
+            img_pil = img_pil.resize((width, height), Image.LANCZOS)
+            logger.info(f"[P2PNet] Downscaled large image to {width}x{height} (max: {max_size})")
+
         # Resize to multiple of 128 (P2PNet requirement)
-        width, height = img_pil.size
         new_width = (width // 128) * 128
         new_height = (height // 128) * 128
 
@@ -95,12 +126,12 @@ class P2PNetEngine:
         if new_height == 0:
             new_height = 128
 
-        logger.info(f"[P2PNet] Resizing image from {width}x{height} to {new_width}x{new_height}")
+        logger.info(f"[P2PNet] Final size: {new_width}x{new_height} (aligned to 128)")
         img_resized = img_pil.resize((new_width, new_height), Image.LANCZOS)
 
-        # Scale factors for mapping back to original size
-        scale_x = width / new_width
-        scale_y = height / new_height
+        # Scale factors for mapping back to ORIGINAL size
+        scale_x = orig_width / new_width
+        scale_y = orig_height / new_height
 
         # Preprocess
         logger.debug("[P2PNet] Preprocessing image tensor...")
@@ -142,9 +173,9 @@ class P2PNetEngine:
             cx = int(point[0] * scale_x)
             cy = int(point[1] * scale_y)
 
-            # Clamp to image bounds
-            cx = max(0, min(cx, width - 1))
-            cy = max(0, min(cy, height - 1))
+            # Clamp to original image bounds
+            cx = max(0, min(cx, orig_width - 1))
+            cy = max(0, min(cy, orig_height - 1))
 
             # Draw filled circle with outline
             radius = 8
@@ -177,5 +208,14 @@ class P2PNetEngine:
 
         self.model.to(self.device)
         self.model.eval()
+
+        # Try to optimize with torch.compile (PyTorch 2.0+)
+        try:
+            if hasattr(torch, 'compile'):
+                self.model = torch.compile(self.model, mode="reduce-overhead")
+                logger.info("[P2PNet] Model optimized with torch.compile")
+        except Exception as e:
+            logger.warning(f"[P2PNet] Could not optimize model: {e}")
+
         self._inference_times.clear()
         logger.info(f"P2PNet model reloaded: {weight_path}")
