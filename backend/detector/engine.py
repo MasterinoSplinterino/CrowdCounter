@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class DetectionEngine:
-    def __init__(self, model_path: str = "yolo11n.pt", device: str = "cpu"):
+    def __init__(self, model_path: str = "yolo26m.pt", device: str = "cpu"):
         self.model_path = model_path
         self.device = device
         self.model: YOLO = None

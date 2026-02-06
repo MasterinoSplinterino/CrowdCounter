@@ -67,11 +67,11 @@ async def init_db(db_path: str = None) -> None:
 
         # Insert default settings if not exist
         default_settings = [
-            ("model", "yolo26n.pt"),
-            ("confidence_threshold", "0.35"),
+            ("model", "yolo26m.pt"),
+            ("confidence_threshold", "0.20"),
             ("detection_interval", "15"),
             ("smoothing_alpha", "0.3"),
-            ("imgsz", "640"),
+            ("imgsz", "1280"),
         ]
 
         for key, value in default_settings:

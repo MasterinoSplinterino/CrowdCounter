@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download YOLO26 model during build (NMS-free, 43% faster on CPU)
-RUN python -c "from ultralytics import YOLO; YOLO('yolo26n.pt')"
+# Download YOLO26m model during build (medium size, better accuracy for crowds)
+RUN python -c "from ultralytics import YOLO; YOLO('yolo26m.pt')"
 
 # Copy application code
 COPY . .

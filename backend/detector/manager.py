@@ -112,17 +112,17 @@ class DetectionManager:
         self.engine = DetectionEngine(device=device)
         self._rooms: Dict[str, RoomProcessor] = {}
         self._settings = {
-            "model": "yolo11n.pt",
-            "confidence_threshold": 0.35,
+            "model": "yolo26m.pt",
+            "confidence_threshold": 0.20,
             "detection_interval": 15,
             "smoothing_alpha": 0.3,
-            "imgsz": 640,
+            "imgsz": 1280,
         }
         self._on_count_update: Optional[Callable] = None
         self._started = False
         self._start_time: Optional[datetime] = None
 
-    async def initialize(self, model_path: str = "yolo11n.pt"):
+    async def initialize(self, model_path: str = "yolo26m.pt"):
         self._settings["model"] = model_path
         self.engine.model_path = model_path
         await self.engine.load_model()
