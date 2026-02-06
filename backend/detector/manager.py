@@ -116,7 +116,7 @@ class DetectionManager:
             "confidence_threshold": 0.20,
             "detection_interval": 15,
             "smoothing_alpha": 0.3,
-            "imgsz": 1280,
+            "imgsz": 2560,
         }
         self._on_count_update: Optional[Callable] = None
         self._started = False

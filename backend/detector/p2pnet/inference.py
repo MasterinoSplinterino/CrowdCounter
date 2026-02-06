@@ -63,17 +63,9 @@ class P2PNetEngine:
         self.model.to(self.device)
         self.model.eval()
 
-        # Try to optimize with torch.compile (PyTorch 2.0+) or torch.jit
-        try:
-            if hasattr(torch, 'compile'):
-                # PyTorch 2.0+ - use torch.compile for best performance
-                self.model = torch.compile(self.model, mode="reduce-overhead")
-                logger.info("[P2PNet] Model optimized with torch.compile")
-            else:
-                # Fallback to JIT tracing for older PyTorch
-                logger.info("[P2PNet] torch.compile not available, using standard mode")
-        except Exception as e:
-            logger.warning(f"[P2PNet] Could not optimize model: {e}")
+        # Note: torch.compile requires C++ compiler (g++) which may not be in Docker
+        # Using standard eager mode for compatibility
+        logger.info("[P2PNet] Using eager mode (torch.compile disabled for Docker compatibility)")
 
         self.loaded = True
         logger.info("P2PNet model loaded successfully (point-based crowd counting)")
@@ -209,13 +201,8 @@ class P2PNetEngine:
         self.model.to(self.device)
         self.model.eval()
 
-        # Try to optimize with torch.compile (PyTorch 2.0+)
-        try:
-            if hasattr(torch, 'compile'):
-                self.model = torch.compile(self.model, mode="reduce-overhead")
-                logger.info("[P2PNet] Model optimized with torch.compile")
-        except Exception as e:
-            logger.warning(f"[P2PNet] Could not optimize model: {e}")
+        # Note: torch.compile disabled for Docker compatibility (requires g++)
+        logger.info("[P2PNet] Using eager mode")
 
         self._inference_times.clear()
         logger.info(f"P2PNet model reloaded: {weight_path}")
