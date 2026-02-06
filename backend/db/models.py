@@ -66,7 +66,7 @@ class CountCreate(BaseModel):
 
 
 class Settings(BaseModel):
-    model: str = "yolo11n.pt"
+    model: str = "yolo26n.pt"
     confidence_threshold: float = 0.35
     detection_interval: int = 15
     smoothing_alpha: float = 0.3
