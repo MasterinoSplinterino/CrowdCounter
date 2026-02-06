@@ -43,15 +43,15 @@ class P2PNetEngine:
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-    async def load_model(self) -> None:
-        """Load P2PNet model."""
+    def load_model(self) -> None:
+        """Load P2PNet model (synchronous)."""
         logger.info(f"Loading P2PNet model from {self.weight_path} on {self.device}")
 
         args = Args()
         self.model = build_model(args, training=False)
 
         # Load checkpoint
-        checkpoint = torch.load(self.weight_path, map_location='cpu')
+        checkpoint = torch.load(self.weight_path, map_location='cpu', weights_only=False)
         self.model.load_state_dict(checkpoint['model'])
 
         self.model.to(self.device)
@@ -161,7 +161,7 @@ class P2PNetEngine:
         args = Args()
         self.model = build_model(args, training=False)
 
-        checkpoint = torch.load(weight_path, map_location='cpu')
+        checkpoint = torch.load(weight_path, map_location='cpu', weights_only=False)
         self.model.load_state_dict(checkpoint['model'])
 
         self.model.to(self.device)

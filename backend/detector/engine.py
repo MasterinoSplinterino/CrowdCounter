@@ -48,10 +48,10 @@ class DetectionEngine:
         self._is_p2pnet = self._check_is_p2pnet()
 
         if self._is_p2pnet:
-            # Load P2PNet model
+            # Load P2PNet model (synchronous, torch.load is blocking)
             from .p2pnet import P2PNetEngine
             self.model = P2PNetEngine(self.model_path, self.device)
-            await self.model.load_model()
+            self.model.load_model()
             self.loaded = True
             logger.info("Model loaded successfully (P2PNet point-based counting)")
         else:
@@ -148,12 +148,11 @@ class DetectionEngine:
         if self._is_p2pnet:
             from .p2pnet import P2PNetEngine
             self.model = P2PNetEngine(model_path, self.device)
-            # Sync load for reload
-            import asyncio
-            asyncio.get_event_loop().run_until_complete(self.model.load_model())
+            self.model.load_model()  # Synchronous load
         else:
             self.model = YOLO(model_path)
             self.model.to(self.device)
 
+        self.loaded = True
         self._inference_times.clear()
         logger.info(f"Model reloaded: {model_path}")
